@@ -34,6 +34,7 @@ species_codes_dd <- read_csv(here("data","FeederWatch_Data_Dictionary_Species_Co
 # Also made a .csv of state birds from data on Wikipedia
 state_bird_df <- read_csv(here("data","state_birds_list_plain.csv"))
 
+
 # Preliminary pre-processing of data:
 
 names(feederwatch) <- tolower(names(feederwatch))
@@ -83,14 +84,15 @@ data_df <- left_join(feederwatch, species_codes_dd, by = "species_code") %>%
 
 # Prep maps of America/USA for making figures
 america_map <- map_data("world", region='USA')
-# USA_map <-
-#   ggplot(america_map, 
-#          aes(x=long, y=lat, group=group)) +
-#   geom_polygon(fill="white",color="black") + 
-#   scale_x_continuous(limits = c(-125,-65)) +
-#   scale_y_continuous(limits = c(25, 50)) + 
-#   coord_map() +
-#   theme_minimal()
+
+USA_map <-
+  ggplot(america_map,
+         aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill="white",color="black") +
+  scale_x_continuous(limits = c(-125,-65)) +
+  scale_y_continuous(limits = c(25, 50)) +
+  coord_map() +
+  theme_minimal()
 
 states_map <- map_data("state")
 
@@ -168,6 +170,18 @@ DT::renderDataTable({
 })
 ```
 
+# Quick facts
+
+- 370,672: The total number of birds reported!
+
+- 361: The number of unique species 
+
+- 177,522: The number of hours volunteers spent birdwatching!
+
+- November 13, 2020: The date the first observation was made
+
+- April 30, 2021: The date the last observation was made
+
 
 
 # Common birds
@@ -220,8 +234,6 @@ common_birds_plot <- USA_map +
 :::
 
 
-# Static 2
-
 
 
 # Species distribution patterns
@@ -271,14 +283,16 @@ renderPlot({
              labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
   guides(color = guide_legend(override.aes = list(size=5)))
 })
+
+
 ```
 
 
 
-# Int 2
+# State bird sightings
 
 ## Column {.sidebar}
-### Select a state to see the sightings of that state's "state bird"
+### Select a state to see its "state bird" sightings 
 ```{r}
 selectInput("state", label = "State:",
             choices = state.name, selected = "Alabama")
@@ -302,6 +316,22 @@ state_bird_data_df <- data_df %>%
   filter(`state/province` == input$state,
          sci_name %in% state_bird_sci_name)
   
+if (dim(state_bird_data_df)[1] < 1){
+  states_map %>%
+    filter(region == tolower(input$state)) %>%
+    ggplot(aes(x = long, y = lat)) +
+    geom_polygon(fill="white",color="black") +
+    coord_map() +
+    theme_minimal() +
+    labs(x="Longitude (E)", 
+       y="Latitude (N)", 
+       title=paste0(input$state, ": ", state_bird_com_name, ": No sightings"))  +
+  theme(axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+                plot.title = element_text(size = 22),
+                plot.caption = element_text(size = 14)) 
+  }
+else {
   states_map %>%
     filter(region == tolower(input$state)) %>%
     ggplot(aes(x = long, y = lat)) +
@@ -315,8 +345,8 @@ state_bird_data_df <- data_df %>%
   theme_minimal() + 
   theme(axis.text = element_text(size = 18),
         axis.title = element_text(size = 18),
-                plot.title = element_text(size = 20),
-                plot.caption = element_text(size = 18),
+                plot.title = element_text(size = 22),
+                plot.caption = element_text(size = 14),
                 legend.title =  element_text(size = 18))+ 
   labs(x="Longitude (E)", 
        y="Latitude (N)", 
@@ -325,56 +355,13 @@ state_bird_data_df <- data_df %>%
        size="Count per observation") +
   facet_wrap(vars(primary_com_name), 
              labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
-  guides(color = guide_legend(override.aes = list(size=5)))
-  
+  guides(color = guide_legend(override.aes = list(size=6)))
+}
 })
 
-# ## START HERE!
-# # Explore migration?
-# # Explore most common birds in each state or rare sightings in your state?
-# # Explore your local birds!
-# 
-# all_birds <- data_df %>%
-#   select(sci_name) %>%
-#   unique()
-# 
-# renderPlot({
-# state_bird_df <- data_df %>%
-#   filter(`state/province` == input$state) 
-# 
-# unique_to_state <- unique(state_bird_df$sci_name)
-# 
-# #%>%
-#  # filter(primary_com_name == "Spotted Towhee") %>%
-#  # ggplot(aes(x = month, y = latitude)) +
-# #  geom_point()  
-#  # geom_smooth()
-# })
 
-
-
-# 
-# state_birds <- data_df %>%
-#   filter(`state/province` == "west virginia") %>%
-#   select(sci_name) %>%
-#   unique()
-# 
-# state_bird_sci_name <- state_bird_df %>%
-#   filter(state == input$state) %>%
-#   select(sci_name)
-# 
-# state_bird_data_df <- data_df %>%
-#   filter(`state/province` == input$state,
-#          sci_name == state_bird_sci_name)
-# 
-# 
-# # unique_to_state <- setdiff(state_birds, all_birds)   # HARD TO FIND UNIQUE BIRDS!!!
-# 
-# common_state_birds <- # slice top 10?
-# rare_state_birds <-   # slice bottom 10??
-
-
-
+# TODO: Michigan and Washington (and others??) have a weird thing happening when the state gets drawn :( Fix if time!
+# TODO: We have bird data from DC but don't have a way to plot it (since DC (and Alaska!) aren't included in the map_data::states - which is weird!)
 
 ```
 
@@ -406,7 +393,7 @@ state_bird_data_df <- data_df %>%
   theme(axis.text = element_text(size = 18),
         axis.title = element_text(size = 18),
                 plot.title = element_text(size = 20),
-                plot.caption = element_text(size = 18),
+                plot.caption = element_text(size = 14),
                 legend.title =  element_text(size = 18))+ 
   labs(x="Longitude (E)", 
        y="Latitude (N)", 
@@ -416,13 +403,99 @@ state_bird_data_df <- data_df %>%
   facet_wrap(vars(primary_com_name), 
              labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
   guides(color = guide_legend(override.aes = list(size=5)))
+  
+  
+  
+  test <- feederwatch
+test2 <- test %>%
+    mutate(date = make_date(year, month, day))
 
 ```
 
 
 # Analysis
 
-## Column
+## Column 
+
+### Where are the birdwatchers?
+
+```{r}
+#| fig-cap: "Observing locations for Project FeederWatch 2020-21 winter."
+#| label: fig-obs-loc
+# Figure 1: Map of unique sighting locations
+
+# Identify unique sighting locations
+unique_sighting_locations <- feederwatch %>%
+  group_by(loc_id) %>%
+  summarize(n_obs = n(),
+            latitude=mean(latitude),
+            longitude=mean(longitude))
+
+# Plot unique sighting locations
+USA_map +
+  geom_point(data=unique_sighting_locations, 
+             aes(x = longitude, y = latitude, group=NULL), 
+             alpha=0.1, 
+             color="darkgreen") +
+  labs(x="Longitude (ºE)", 
+       y = "Latitude (ºN)", 
+       title = "Observing locations for 2020-21 winter in US and southern Canada",
+       subtitle = "Engagement in Project Feederwatch is stronger in the eastern than the western \nU.S.; the highest density of birdwatchers are in the mid-Atlantic to Northeast regions",
+       caption = "Data: Project FeederWatch")
+
+```
+
+
+## Column {data-width=400}
+
+### Number of birds observed by latitude
+```{r}
+# Figure 2: Bird count per latitude band
+
+feederwatch_lat <- feederwatch %>%
+  mutate(Date = ymd(paste(year, month, day, sep="-")),
+         lat_band = case_when(
+           latitude < 35 ~ "low",
+           latitude >=35 & latitude < 45 ~ "mid",
+           latitude >= 45 ~ "high"
+         )) 
+feederwatch_lat$lat_band <- factor(feederwatch_lat$lat_band, levels=c("high","mid","low"))
+
+feederwatch_lat %>%
+  group_by(Date, 
+           lat_band) %>%
+  summarize(total = sum(how_many),
+            count = n(),
+            std_total = total/count) %>%
+  ggplot(aes(x=Date, y = std_total, color = lat_band)) +   
+  geom_smooth() +   # loess-smoother is default
+  theme_minimal() +   
+  labs(y = "Average number of birds per observation", 
+       title = "Birds observed per latitude band during 2020-21 winter", 
+       color = "Latitude band", 
+       subtitle = "Birds are most abundant at high latitudes, but become relatively \nmore frequent in low latitudes in the winter", 
+       caption = "Data: Project FeederWatch")
+
+```
+
+
+### Number of observations per species
+```{r}
+feederwatch %>%
+  group_by(species_code) %>%
+  summarize(n_obs = n()) %>%
+  ggplot() +
+  geom_histogram(aes(n_obs), 
+                 boundary=0, 
+                 closed="left") +
+  labs(x = "Number of observations for a given species", 
+       y = "Frequency", 
+       title = "Number of observations per bird species",
+       subtitle = "Most bird species are only observed once. A few common species are observed \nthousands of times.",
+       caption = "Data: ProjectFeederwatch") +
+  theme_minimal()
+
+```
 
 
 
