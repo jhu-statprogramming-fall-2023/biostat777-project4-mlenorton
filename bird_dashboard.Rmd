@@ -117,16 +117,17 @@ library(lemon)     # pretty tables with kable
 
 ## Column 
 
-**Project aims**
+**Purpose of this dashboard**
+This dashboard investigates patterns in the abundance and distribution of different species of birds in the 2020-21 winter in the United States and southern Canada. The data came from [Project FeederWatch](https://feederwatch.org/), which is a citizen science project that aims to engage individuals in North America to count birds (for as long or as little as they like) to track winter trends in bird distribution and abundance. This project has been running for more than 30 years at this point!
 
-Let's investigate patterns in abundance and distribution of different species of birds in the 2020-21 winter in the United States and southern Canada.
-Specifically, we can examine:
+In this dashboard, we explore:
 
--   when and where are birds observed
--   which species are most common, and where are they found
--   which species tend to occur in large flocks, and where are they found
+-   high-level overview of the observing system
+-   which species were most common, and where they were found
+-   species-specific distribution patterns for all observed species
+-   if a state bird was observed in its own state (for fun!)
 
-This analysis is intended for the general public, as well as the citizen scientists (and the graders for Biostat 777).
+This dashboard is intended for use by the general public, as well as the citizen scientists of Project FeederWatch. 
 
 
 ### Chart A
@@ -152,10 +153,7 @@ This analysis is intended for the general public, as well as the citizen scienti
 # Data 
 
 ## Column 
-These data were discovered via [TidyTuesday for January 10, 2023](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-01-10), but originally come from [Project FeederWatch](https://feederwatch.org/).
-Project FeederWatch is a citizen science project that aims to engage individuals in North America to count birds (for as long or as little as they like) to track winter trends in bird distribution and abundance.
-This project has been running for more than 30 years at this point!
-The data dictionary is available [here](https://drive.google.com/file/d/1kHmx2XhA2MJtEyTNMpwqTQEnoa9M7Il2/view).
+These data were discovered and downloaded via [TidyTuesday for January 10, 2023](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-01-10), but originally come from [Project FeederWatch](https://feederwatch.org/). The data dictionary is available [here](https://drive.google.com/file/d/1kHmx2XhA2MJtEyTNMpwqTQEnoa9M7Il2/view). For the purposes of this dashboard, data were filtered to focus on the United States and Southern Canada (south of 50N). Data of questionable quality (i.e., having been identified by Project FeederWatch as being "invalid") or data that were missing critical information were omitted. A total of 96,408 unique observations were retained in this analysis.
 
 
 ```{r}
@@ -168,10 +166,15 @@ DT::renderDataTable({
                                scroller = TRUE,
                                scrollY = '450px'))
 })
+
+## TODO: change size of text below!!
 ```
 
 # Quick facts
 
+## Column
+
+### Quick facts
 - 370,672: The total number of birds reported!
 
 - 361: The number of unique species 
@@ -183,6 +186,13 @@ DT::renderDataTable({
 - April 30, 2021: The date the last observation was made
 
 
+## Column {data-width=400}
+
+### Northern cardinal
+![The northern cardinal was the most commonly observed species in Project FeederWatch! It is also the state bird for seven states. Photo credit: American Bird Conservancy.](northern_cardinal.jpeg){width="80%"}
+
+### Dark-eyed junco
+![The dark-eyed junco was the second most commonly observed species in Project FeederWatch in winter 2020-21. <br> Photo credit: Bob Vuxinic, submitted to Project FeederWatch](dark_eyed_junco_ProjectFeederwatch.png){width="80%"}
 
 # Common birds
 
@@ -245,7 +255,14 @@ Select a species to see when and where it was observed
 selectInput("bird_sp", label = "Species:",
             choices = sort(unique(data_df$primary_com_name)), selected = "Abert's Towhee")
 
-# TODO: add another option for "select a mont" to see which birds are where and when?
+# TODO: add another option for "select a month" to see which birds are where and when?
+
+# Probably just need to do another select input
+# sliderInput(inputId = "month",
+#             label = "Month",
+#             min = ,
+#             max = 30,
+#             value = 20)
 ```
 
 
@@ -282,12 +299,11 @@ renderPlot({
        y="Latitude (N)", 
        title=paste0("Reported sightings of the ", input$bird_sp, " in the US and southern Canada in winter 2020-21"), 
        caption = "Data: Project FeederWatch",
-       size="Count per observation") +
-  facet_wrap(vars(primary_com_name), 
-             labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
+       size="Count per observation")+
   guides(color = guide_legend(override.aes = list(size=5)))
 })
 
+## TODO: add slider so we can see how the birds change over the months?
 
 ```
 
