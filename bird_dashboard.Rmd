@@ -186,7 +186,7 @@ DT::renderDataTable({
 
 # Common birds
 
-## Column {data-width="50"}
+## Column {.tabset}
 
 ### Top 10 most common birds
 ```{r , render=lemon_print}
@@ -205,7 +205,7 @@ commonly_sighted_birds_table
 
 ```
 
-## Column {data-width="50"}
+
 ### Sighting numbers and locations
 ```{r, eval=FALSE}
 # Figure 4: Commonly sighted birds
@@ -227,24 +227,28 @@ common_birds_plot <- USA_map +
              labeller = labeller(PRIMARY_COM_NAME = label_wrap_gen(width = 10)))
 #ggsave(here("figs","Commonly_sighted_birds.png"), plot=common_birds_plot, width=7, height=7, units="in")
 
+## TODO: don't know how to center the graphic below!
 ```
 
 ::: {#fig-common fig-cap="Heatmap of observations for the most common birds."}
-![](./figs/Commonly_sighted_birds.png){width="100%"}
+![](./figs/Commonly_sighted_birds.png){width="70%"}
 :::
-
-
 
 
 # Species distribution patterns
 
 ## Column {.sidebar}
 
+Select a species to see when and where it was observed
+
 ```{r}
 selectInput("bird_sp", label = "Species:",
             choices = sort(unique(data_df$primary_com_name)), selected = "Abert's Towhee")
 
+# TODO: add another option for "select a mont" to see which birds are where and when?
 ```
+
+
 
 ## Column
 
@@ -292,7 +296,9 @@ renderPlot({
 # State bird sightings
 
 ## Column {.sidebar}
-### Select a state to see its "state bird" sightings 
+
+Select a state to see its "state bird" sightings 
+
 ```{r}
 selectInput("state", label = "State:",
             choices = state.name, selected = "Alabama")
@@ -301,7 +307,6 @@ selectInput("state", label = "State:",
 ## Columm 
 ### State bird sightings
 ```{r}
-
 
 renderPlot({
 state_bird_sci_name <- state_bird_df %>%
@@ -315,6 +320,76 @@ state_bird_com_name <- state_bird_df %>%
 state_bird_data_df <- data_df %>%
   filter(`state/province` == input$state,
          sci_name %in% state_bird_sci_name)
+
+n_bird <- sum(state_bird_data_df$how_many)
+n_obs <- nrow(state_bird_data_df)
+  
+if (dim(state_bird_data_df)[1] < 1){
+  states_map %>%
+    filter(region == tolower(input$state)) %>%
+    ggplot(aes(x = long, y = lat)) +
+    geom_polygon(fill="white",color="black") +
+    coord_map() +
+    theme_minimal() +
+    labs(x="Longitude (E)", 
+       y="Latitude (N)", 
+       title=paste0(input$state, ": ", state_bird_com_name, ": No sightings"))  +
+  theme(axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+                plot.title = element_text(size = 22),
+                plot.caption = element_text(size = 14)) 
+  }
+else {
+  states_map %>%
+    filter(region == tolower(input$state)) %>%
+    ggplot(aes(x = long, y = lat)) +
+    geom_polygon(fill="white",color="black") +
+    coord_map() +
+    theme_minimal() +
+    geom_point(data = state_bird_data_df,
+             aes(x = longitude, y = latitude), 
+             size = 5,
+             color = "black",
+             fill = "grey80",
+             pch = 21) +
+  theme_minimal() + 
+  theme(axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+                plot.title = element_text(size = 22),
+                plot.subtitle = element_text(size = 18),
+                plot.caption = element_text(size = 14),
+                legend.title =  element_text(size = 18)) + 
+  labs(x="Longitude (E)", 
+       y="Latitude (N)", 
+       title=paste0(input$state, ": ", state_bird_com_name), 
+       subtitle = paste0(n_bird, " birds sighted in ", n_obs, " observations"),
+       caption = "Data: Project FeederWatch") 
+}
+})
+
+
+# TODO: Michigan and Washington (and others??) have a weird thing happening when the state gets drawn :( Fix if time!
+# TODO: We have bird data from DC but don't have a way to plot it (since DC (and Alaska!) aren't included in the map_data::states - which is weird!)
+
+```
+
+```{r backup, eval=FALSE}
+
+renderPlot({
+state_bird_sci_name <- state_bird_df %>%
+  filter(state == input$state) %>%
+  select(sci_name)
+
+state_bird_com_name <- state_bird_df %>%
+  filter(state == input$state) %>%
+  select(primary_com_name)
+
+state_bird_data_df <- data_df %>%
+  filter(`state/province` == input$state,
+         sci_name %in% state_bird_sci_name)
+
+n_bird <- sum(state_bird_data_df$how_many)
+n_obs <- nrow(state_bird_data_df)
   
 if (dim(state_bird_data_df)[1] < 1){
   states_map %>%
@@ -378,6 +453,11 @@ state_bird_com_name <- state_bird_df %>%
 state_bird_data_df <- data_df %>%
   filter(`state/province` == "West Virginia",
          sci_name %in% state_bird_sci_name)
+
+
+state_bird_data_df <- data_df %>%
+  filter(`state/province` == input$state,
+         sci_name %in% state_bird_sci_name)
   
   states_map %>%
     filter(region == tolower("West Virginia")) %>%
@@ -439,7 +519,6 @@ USA_map +
              color="darkgreen") +
   labs(x="Longitude (ºE)", 
        y = "Latitude (ºN)", 
-       title = "Observing locations for 2020-21 winter in US and southern Canada",
        subtitle = "Engagement in Project Feederwatch is stronger in the eastern than the western \nU.S.; the highest density of birdwatchers are in the mid-Atlantic to Northeast regions",
        caption = "Data: Project FeederWatch")
 
@@ -471,7 +550,6 @@ feederwatch_lat %>%
   geom_smooth() +   # loess-smoother is default
   theme_minimal() +   
   labs(y = "Average number of birds per observation", 
-       title = "Birds observed per latitude band during 2020-21 winter", 
        color = "Latitude band", 
        subtitle = "Birds are most abundant at high latitudes, but become relatively \nmore frequent in low latitudes in the winter", 
        caption = "Data: Project FeederWatch")
@@ -480,6 +558,7 @@ feederwatch_lat %>%
 
 
 ### Number of observations per species
+
 ```{r}
 feederwatch %>%
   group_by(species_code) %>%
@@ -490,12 +569,10 @@ feederwatch %>%
                  closed="left") +
   labs(x = "Number of observations for a given species", 
        y = "Frequency", 
-       title = "Number of observations per bird species",
-       subtitle = "Most bird species are only observed once. A few common species are observed \nthousands of times.",
+       subtitle = "Most species were only observed once. A few species were observed \nthousands of times.",
        caption = "Data: ProjectFeederwatch") +
   theme_minimal()
 
 ```
-
 
 
