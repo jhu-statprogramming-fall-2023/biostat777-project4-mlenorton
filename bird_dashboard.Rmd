@@ -31,17 +31,39 @@ feederwatch <- readRDS(here("data","feederwatch.RDS"))
 # had to save the species_codes dictionary manually from https://docs.google.com/spreadsheets/d/1kHmx2XhA2MJtEyTNMpwqTQEnoa9M7Il2/edit#gid=2040245914
 species_codes_dd <- read_csv(here("data","FeederWatch_Data_Dictionary_Species_Codes.csv"),skip = 1)
 
+# Also made a .csv of state birds from data on Wikipedia
+state_bird_df <- read_csv(here("data","state_birds_list_plain.csv"))
+
 # Preliminary pre-processing of data:
 
 names(feederwatch) <- tolower(names(feederwatch))
 names(species_codes_dd) <- tolower(names(species_codes_dd))
 
+# Make df for state names/abbreviations 
+US_state_name_abb <- as.data.frame(cbind(state_abb = state.abb, 'state/province' = state.name))
+US_state_name_abb <- rbind(US_state_name_abb,c("DC","Washington, D.C."))
+
+# CA_provinces_abb <- data_df %>%
+#  filter(country=='CA') %>%
+#   select('state/province') %>%
+#   unique() %>%
+#   arrange()
+
+CA_province_name <- c("Quebec","Ontario","British Columbia","Manitoba","Nova Scotia","New Brunswick","Prince Edward Island","Newfoundland and Labrador","Alberta","Saskatchewan")
+CA_provinces_abb <- c("QC","ON","BC","MB","NS","NB","PE","NL","AB","SK")
+CA_province_name_abb <- as.data.frame(cbind(state_abb = CA_provinces_abb, 'state/province' = CA_province_name)) 
+
+US_CA_name_abb <- rbind(US_state_name_abb, CA_province_name_abb)
+
+# Clean data
 data_df <- left_join(feederwatch, species_codes_dd, by = "species_code") %>%
   filter(valid == 1,                        # remove "invalid" observations (N = 656)
          category == "species",          # remove birds that weren't identified to the species level (N = 1194)
          latitude >= 20,
          latitude <= 50) %>%
-  separate_wider_delim(subnational1_code, "-", names = c("country","state/province")) %>%
+  separate_wider_delim(subnational1_code, "-", names = c("country","state_abb")) %>%
+  left_join(US_CA_name_abb, by = "state_abb") %>%
+  filter(country == "US" | country == "CA") %>%
   mutate(month=factor(month, levels=c("11","12","1","2","3","4"))) %>%
   select(primary_com_name, 
             sci_name, 
@@ -55,16 +77,29 @@ data_df <- left_join(feederwatch, species_codes_dd, by = "species_code") %>%
             how_many)  # remove columns that probably aren't interesting to the public
 # Maybe still have too many columns - may want to filter further for data table??
 
+# Check that all US states + DC + Canadian provinces were matched correctly
+# state_na_i <- which(is.na(data_df$'state/province')==1)
+# data_df[head(state_na_i),]
+
 # Prep maps of America/USA for making figures
 america_map <- map_data("world", region='USA')
-USA_map <-
-  ggplot(america_map, 
-         aes(x=long, y=lat, group=group)) +
-  geom_polygon(fill="white",color="black") + 
-  scale_x_continuous(limits = c(-125,-65)) +
-  scale_y_continuous(limits = c(25, 50)) + 
-  coord_map() +
-  theme_minimal()
+# USA_map <-
+#   ggplot(america_map, 
+#          aes(x=long, y=lat, group=group)) +
+#   geom_polygon(fill="white",color="black") + 
+#   scale_x_continuous(limits = c(-125,-65)) +
+#   scale_y_continuous(limits = c(25, 50)) + 
+#   coord_map() +
+#   theme_minimal()
+
+states_map <- map_data("state")
+
+# state_map <- states_map %>%
+#   filter(region == "west virginia") %>%
+#   ggplot(aes(x = long, y = lat)) +
+#   geom_polygon(fill="white",color="black") +
+#   coord_map() +
+#   theme_minimal()
 
 ```
 
@@ -242,6 +277,147 @@ renderPlot({
 
 # Int 2
 
+## Column {.sidebar}
+### Select a state to see the sightings of that state's "state bird"
+```{r}
+selectInput("state", label = "State:",
+            choices = state.name, selected = "Alabama")
+```
+
+## Columm 
+### State bird sightings
+```{r}
+
+
+renderPlot({
+state_bird_sci_name <- state_bird_df %>%
+  filter(state == input$state) %>%
+  select(sci_name)
+
+state_bird_com_name <- state_bird_df %>%
+  filter(state == input$state) %>%
+  select(primary_com_name)
+
+state_bird_data_df <- data_df %>%
+  filter(`state/province` == input$state,
+         sci_name %in% state_bird_sci_name)
+  
+  states_map %>%
+    filter(region == tolower(input$state)) %>%
+    ggplot(aes(x = long, y = lat)) +
+    geom_polygon(fill="white",color="black") +
+    coord_map() +
+    theme_minimal() +
+    geom_point(data = state_bird_data_df,
+             aes(x = longitude, y = latitude, group=NULL, size=how_many, color=month), 
+             alpha=0.5) +
+  scale_color_manual(values=month_colors) +  
+  theme_minimal() + 
+  theme(axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+                plot.title = element_text(size = 20),
+                plot.caption = element_text(size = 18),
+                legend.title =  element_text(size = 18))+ 
+  labs(x="Longitude (E)", 
+       y="Latitude (N)", 
+       title=paste0(input$state, ": ", state_bird_com_name), 
+       caption = "Data: Project FeederWatch",
+       size="Count per observation") +
+  facet_wrap(vars(primary_com_name), 
+             labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
+  guides(color = guide_legend(override.aes = list(size=5)))
+  
+})
+
+# ## START HERE!
+# # Explore migration?
+# # Explore most common birds in each state or rare sightings in your state?
+# # Explore your local birds!
+# 
+# all_birds <- data_df %>%
+#   select(sci_name) %>%
+#   unique()
+# 
+# renderPlot({
+# state_bird_df <- data_df %>%
+#   filter(`state/province` == input$state) 
+# 
+# unique_to_state <- unique(state_bird_df$sci_name)
+# 
+# #%>%
+#  # filter(primary_com_name == "Spotted Towhee") %>%
+#  # ggplot(aes(x = month, y = latitude)) +
+# #  geom_point()  
+#  # geom_smooth()
+# })
+
+
+
+# 
+# state_birds <- data_df %>%
+#   filter(`state/province` == "west virginia") %>%
+#   select(sci_name) %>%
+#   unique()
+# 
+# state_bird_sci_name <- state_bird_df %>%
+#   filter(state == input$state) %>%
+#   select(sci_name)
+# 
+# state_bird_data_df <- data_df %>%
+#   filter(`state/province` == input$state,
+#          sci_name == state_bird_sci_name)
+# 
+# 
+# # unique_to_state <- setdiff(state_birds, all_birds)   # HARD TO FIND UNIQUE BIRDS!!!
+# 
+# common_state_birds <- # slice top 10?
+# rare_state_birds <-   # slice bottom 10??
+
+
+
+
+```
+
+```{r try things out, eval=FALSE}
+
+state_bird_sci_name <- state_bird_df %>%
+  filter(state == "West Virginia") %>%
+  select(sci_name)
+
+state_bird_com_name <- state_bird_df %>%
+  filter(state == "West Virginia") %>%
+  select(primary_com_name)
+
+state_bird_data_df <- data_df %>%
+  filter(`state/province` == "West Virginia",
+         sci_name %in% state_bird_sci_name)
+  
+  states_map %>%
+    filter(region == tolower("West Virginia")) %>%
+    ggplot(aes(x = long, y = lat)) +
+    geom_polygon(fill="white",color="black") +
+    coord_map() +
+    theme_minimal() +
+    geom_point(data = state_bird_data_df,
+             aes(x = longitude, y = latitude, group=NULL, size=how_many, color=month), 
+             alpha=0.5) +
+  scale_color_manual(values=month_colors) +  
+  theme_minimal() + 
+  theme(axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+                plot.title = element_text(size = 20),
+                plot.caption = element_text(size = 18),
+                legend.title =  element_text(size = 18))+ 
+  labs(x="Longitude (E)", 
+       y="Latitude (N)", 
+       title=paste0("Reported sightings of the ", state_bird_com_name, " in ", input$state, " in winter 2020-21"), 
+       caption = "Data: Project FeederWatch",
+       size="Count per observation") +
+  facet_wrap(vars(primary_com_name), 
+             labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
+  guides(color = guide_legend(override.aes = list(size=5)))
+
+```
 
 
 # Analysis
