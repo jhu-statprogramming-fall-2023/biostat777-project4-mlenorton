@@ -38,7 +38,9 @@ names(species_codes_dd) <- tolower(names(species_codes_dd))
 
 data_df <- left_join(feederwatch, species_codes_dd, by = "species_code") %>%
   filter(valid == 1,                        # remove "invalid" observations (N = 656)
-         category == "species") %>%         # remove birds that weren't identified to the species level (N = 1194)
+         category == "species",          # remove birds that weren't identified to the species level (N = 1194)
+         latitude >= 20,
+         latitude <= 50) %>%
   separate_wider_delim(subnational1_code, "-", names = c("country","state/province")) %>%
   mutate(month=factor(month, levels=c("11","12","1","2","3","4"))) %>%
   select(primary_com_name, 
@@ -50,9 +52,7 @@ data_df <- left_join(feederwatch, species_codes_dd, by = "species_code") %>%
             month, 
             day, 
             year, 
-            how_many,
-            effort_hrs_atleast,
-            snow_dep_atleast)  # remove columns that probably aren't interesting to the public
+            how_many)  # remove columns that probably aren't interesting to the public
 # Maybe still have too many columns - may want to filter further for data table??
 
 # Prep maps of America/USA for making figures
@@ -73,6 +73,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=FALSE)
 library(flexdashboard)
 library(DT)
 library(shiny)
+library(lemon)     # pretty tables with kable
 ```
 # About
 
@@ -134,15 +135,61 @@ DT::renderDataTable({
 
 
 
-# Static 1
+# Common birds
 
+## Column {data-width="50"}
+
+### Top 10 most common birds
+```{r , render=lemon_print}
+# Table of most common birds
+
+commonly_sighted_birds_table <- data_df %>%
+  group_by(sci_name, primary_com_name) %>%
+  summarize(total = sum(how_many),
+            count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n=10) %>%
+  select('Common name' = primary_com_name,
+         'Scientific name' = sci_name,
+         'Number of observations' = count)
+commonly_sighted_birds_table
+
+```
+
+## Column {data-width="50"}
+### Sighting numbers and locations
+```{r, eval=FALSE}
+# Figure 4: Commonly sighted birds
+# Since this figure takes a long time to render, we'll just load in the saved figure below, but this is the code that was used to generate it:
+  
+common_birds_plot <- USA_map +
+  geom_bin_2d(data = commonly_sighted_birds_df, 
+              aes(x = longitude, y = latitude, group=NULL)) +
+  scale_fill_continuous(low="lightskyblue1", 
+                        high="indianred4", 
+                        name="Number of \nsightings") +
+  theme_minimal() + 
+  labs(x="Longitude (E)", 
+       y="Latitude (N)", 
+       title="Observations of common birds in the US and southern Canada", 
+       subtitle="Common bird species are most frequently observed in the Mid-Atlantic and \nNortheast regions, likely due (in part) to a sampling bias and easy bird identification", 
+       color="Month") + 
+  facet_wrap(vars(PRIMARY_COM_NAME), 
+             labeller = labeller(PRIMARY_COM_NAME = label_wrap_gen(width = 10)))
+#ggsave(here("figs","Commonly_sighted_birds.png"), plot=common_birds_plot, width=7, height=7, units="in")
+
+```
+
+::: {#fig-common fig-cap="Heatmap of observations for the most common birds."}
+![](./figs/Commonly_sighted_birds.png){width="100%"}
+:::
 
 
 # Static 2
 
 
 
-# Sighting times and locations
+# Species distribution patterns
 
 ## Column {.sidebar}
 
@@ -157,7 +204,7 @@ selectInput("bird_sp", label = "Species:",
 ### Bird sightings
 
 ```{r}
-month_colors = c("sandybrown","indianred","slateblue3","royalblue","palegreen3","goldenrod1")
+month_colors = c("chocolate4","coral2","slateblue3","royalblue","palegreen3","goldenrod1")
 
 renderPlot({
   bird_species_df <- data_df %>%
@@ -173,15 +220,21 @@ renderPlot({
   geom_point(data = bird_species_df,
              aes(x = longitude, y = latitude, group=NULL, size=how_many, color=month), 
              alpha=0.5) +
-  scale_color_manual(values=month_colors) +   
+  scale_color_manual(values=month_colors) +  
   theme_minimal() + 
+  theme(axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+                plot.title = element_text(size = 20),
+                plot.caption = element_text(size = 18),
+                legend.title =  element_text(size = 18))+ 
   labs(x="Longitude (E)", 
        y="Latitude (N)", 
        title=paste0("Reported sightings of the ", input$bird_sp, " in the US and southern Canada in winter 2020-21"), 
        caption = "Data: Project FeederWatch",
        size="Count per observation") +
   facet_wrap(vars(primary_com_name), 
-             labeller = labeller(primary_com_name = label_wrap_gen(width = 10)))
+             labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
+  guides(color = guide_legend(override.aes = list(size=5)))
 })
 ```
 
