@@ -330,6 +330,12 @@ birds_obs_often <- data_df %>%
 selectInput("flock_sp", label = "Species:",
             choices = sort(birds_obs_often$primary_com_name), selected = "Abert's Towhee")
 
+sliderInput(inputId = "nbin",
+            label = "Number of Bins for the histogram",
+            min = 5,
+            max = 50,
+            value = 25)
+
 ```
 
 ## Column 
@@ -352,11 +358,17 @@ flock_df %>%
   ggplot() +
   geom_histogram(aes(how_many), 
                  boundary=0, 
-                 closed="left") +
+                 closed="left",
+                 bins = input$nbin) +
   labs(x = "Number of birds observed together", 
        y = "Frequency", 
        title = paste0("Histogram of observations of ", input$flock_sp)) +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+                plot.title = element_text(size = 20),
+                plot.caption = element_text(size = 18),
+                legend.title =  element_text(size = 18))
 }
 })
 ```
