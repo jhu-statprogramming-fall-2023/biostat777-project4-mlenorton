@@ -2,9 +2,11 @@
 title: "Birdwatching with Project Feederwatch"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
     source_code: embed
     vertical_layout: fill
+    theme:
+      version: 4
+      bootswatch: minty
 runtime: shiny
 ---
 
@@ -170,9 +172,9 @@ DT::renderDataTable({
 ## TODO: change size of text below!!
 ```
 
-# Quick facts
+# Quick facts {data-orientation=rows}
 
-## Column
+## Row
 
 ### Quick facts
 - 370,672: The total number of birds reported!
@@ -186,13 +188,16 @@ DT::renderDataTable({
 - April 30, 2021: The date the last observation was made
 
 
-## Column {data-width=400}
+## Row {data-width=250}
 
 ### Northern cardinal
-![The northern cardinal was the most commonly observed species in Project FeederWatch! It is also the state bird for seven states. Photo credit: American Bird Conservancy.](northern_cardinal.jpeg){width="80%"}
+![The northern cardinal was the most commonly observed species in Project FeederWatch in winter 2020-21. It is also the state bird for seven states! Photo credit: American Bird Conservancy.](northern_cardinal.jpeg){width="80%"}
 
 ### Dark-eyed junco
-![The dark-eyed junco was the second most commonly observed species in Project FeederWatch in winter 2020-21. <br> Photo credit: Bob Vuxinic, submitted to Project FeederWatch](dark_eyed_junco_ProjectFeederwatch.png){width="80%"}
+![The dark-eyed junco was the second most commonly observed species. <br> Photo credit: Bob Vuxinic](dark_eyed_junco_ProjectFeederwatch.png){width="80%"}
+
+### Downy woodpecker
+![The downy woodpecker was the third most commonly observed species. Photo credit: Evan Lipton](downy_woodpecker.jpeg){width="80%"}
 
 # Common birds
 
@@ -259,7 +264,7 @@ selectInput("bird_sp", label = "Species:",
 # TODO: add another option for "select a month" to see which birds are where and when?
 
 # Select the months you want to see
-selectInput("month_input", label = "Species:",
+selectInput("month_input", label = "Month:",
             choices = c("Nov","Dec","Jan","Feb","Mar","Apr"), multiple = TRUE, selected = "Nov")
 
 
@@ -516,7 +521,7 @@ test2 <- test %>%
 ```
 
 
-# Analysis
+# Analysis 
 
 ## Column 
 
