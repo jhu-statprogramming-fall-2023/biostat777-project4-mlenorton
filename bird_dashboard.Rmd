@@ -1,6 +1,6 @@
 ---
 title: "Birdwatching with Project Feederwatch"
-output: 
+output:
   flexdashboard::flex_dashboard:
     source_code: embed
     vertical_layout: fill
@@ -8,9 +8,19 @@ output:
       version: 4
       bootswatch: minty
 runtime: shiny
+resource_files:
+- figs/hist_plot.png
+- figs/Observing_locations.png
+- figs/Commonly_sighted_birds.png
+- downy_woodpecker.jpeg
+- northern_cardinal.jpeg
+- dark_eyed_junco_ProjectFeederwatch.png
+- data/state_birds_list_plain.csv
+- data/FeederWatch_Data_Dictionary_Species_Codes.csv
+- data/feederwatch.RDS
 ---
 
-```{r global, include=FALSE}
+```{r, include=FALSE}
 library(here)
 library(tidyverse)
 # Load data for dashboard
@@ -27,6 +37,15 @@ feederwatch <- readr::read_csv('https://raw.githubusercontent.com/rfordatascienc
 saveRDS(feederwatch, file = here("data","feederwatch.RDS"))
 }
 
+```
+
+
+```{r global}
+library(here)
+library(tidyverse)
+library(maps)
+library(mapproj)
+library(lemon) 
 # Load data
 feederwatch <- readRDS(here("data","feederwatch.RDS"))
 
@@ -36,9 +55,7 @@ species_codes_dd <- read_csv(here("data","FeederWatch_Data_Dictionary_Species_Co
 # Also made a .csv of state birds from data on Wikipedia
 state_bird_df <- read_csv(here("data","state_birds_list_plain.csv"))
 
-
 # Preliminary pre-processing of data:
-
 names(feederwatch) <- tolower(names(feederwatch))
 names(species_codes_dd) <- tolower(names(species_codes_dd))
 
@@ -152,7 +169,6 @@ DT::renderDataTable({
                                scrollY = '450px'))
 })
 
-## TODO: change size of text below!!
 ```
 
 # Quick facts {data-orientation=rows}
@@ -244,8 +260,6 @@ Select a species to see when and where it was observed
 selectInput("bird_sp", label = "Species:",
             choices = sort(unique(data_df$primary_com_name)), selected = "Abert's Towhee")
 
-# TODO: add another option for "select a month" to see which birds are where and when?
-
 # Select the months you want to see
 selectInput("month_input", label = "Month:",
             choices = c("Nov","Dec","Jan","Feb","Mar","Apr"), multiple = TRUE, selected = "Nov")
@@ -295,8 +309,6 @@ renderPlot({
        size="Count per observation")+
   guides(color = guide_legend(override.aes = list(size=5)))
 })
-
-## TODO: add slider so we can see how the birds change over the months?
 
 ```
 
@@ -378,129 +390,6 @@ else {
 }
 })
 
-
-# TODO: Michigan and Washington (and others??) have a weird thing happening when the state gets drawn :( Fix if time!
-# TODO: We have bird data from DC but don't have a way to plot it (since DC (and Alaska!) aren't included in the map_data::states - which is weird!)
-
-```
-
-```{r backup, eval=FALSE}
-
-renderPlot({
-state_bird_sci_name <- state_bird_df %>%
-  filter(state == input$state) %>%
-  select(sci_name)
-
-state_bird_com_name <- state_bird_df %>%
-  filter(state == input$state) %>%
-  select(primary_com_name)
-
-state_bird_data_df <- data_df %>%
-  filter(`state/province` == input$state,
-         sci_name %in% state_bird_sci_name)
-
-n_bird <- sum(state_bird_data_df$how_many)
-n_obs <- nrow(state_bird_data_df)
-  
-if (dim(state_bird_data_df)[1] < 1){
-  states_map %>%
-    filter(region == tolower(input$state)) %>%
-    ggplot(aes(x = long, y = lat)) +
-    geom_polygon(fill="white",color="black") +
-    coord_map() +
-    theme_minimal() +
-    labs(x="Longitude (°E)", 
-       y="Latitude (°N)", 
-       title=paste0(input$state, ": ", state_bird_com_name, ": No sightings"))  +
-  theme(axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-                plot.title = element_text(size = 22),
-                plot.caption = element_text(size = 14)) 
-  }
-else {
-  states_map %>%
-    filter(region == tolower(input$state)) %>%
-    ggplot(aes(x = long, y = lat)) +
-    geom_polygon(fill="white",color="black") +
-    coord_map() +
-    theme_minimal() +
-    geom_point(data = state_bird_data_df,
-             aes(x = longitude, y = latitude, group=NULL, size=how_many, color=month), 
-             alpha=0.5) +
-  scale_color_manual(values=month_colors) +  
-  theme_minimal() + 
-  theme(axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-                plot.title = element_text(size = 22),
-                plot.caption = element_text(size = 14),
-                legend.title =  element_text(size = 18))+ 
-  labs(x="Longitude (°E)", 
-       y="Latitude (°N)", 
-       title=paste0(input$state, ": ", state_bird_com_name), 
-       caption = "Data: Project FeederWatch",
-       size="Count per observation") +
-  facet_wrap(vars(primary_com_name), 
-             labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
-  guides(color = guide_legend(override.aes = list(size=6)))
-}
-})
-
-
-# TODO: Michigan and Washington (and others??) have a weird thing happening when the state gets drawn :( Fix if time!
-# TODO: We have bird data from DC but don't have a way to plot it (since DC (and Alaska!) aren't included in the map_data::states - which is weird!)
-
-```
-
-```{r try things out, eval=FALSE}
-
-state_bird_sci_name <- state_bird_df %>%
-  filter(state == "West Virginia") %>%
-  select(sci_name)
-
-state_bird_com_name <- state_bird_df %>%
-  filter(state == "West Virginia") %>%
-  select(primary_com_name)
-
-state_bird_data_df <- data_df %>%
-  filter(`state/province` == "West Virginia",
-         sci_name %in% state_bird_sci_name)
-
-
-state_bird_data_df <- data_df %>%
-  filter(`state/province` == input$state,
-         sci_name %in% state_bird_sci_name)
-  
-  states_map %>%
-    filter(region == tolower("West Virginia")) %>%
-    ggplot(aes(x = long, y = lat)) +
-    geom_polygon(fill="white",color="black") +
-    coord_map() +
-    theme_minimal() +
-    geom_point(data = state_bird_data_df,
-             aes(x = longitude, y = latitude, group=NULL, size=how_many, color=month), 
-             alpha=0.5) +
-  scale_color_manual(values=month_colors) +  
-  theme_minimal() + 
-  theme(axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-                plot.title = element_text(size = 20),
-                plot.caption = element_text(size = 14),
-                legend.title =  element_text(size = 18))+ 
-  labs(x="Longitude (°E)", 
-       y="Latitude (°N)", 
-       title=paste0("Reported sightings of the ", state_bird_com_name, " in ", input$state, " in winter 2020-21"), 
-       caption = "Data: Project FeederWatch",
-       size="Count per observation") +
-  facet_wrap(vars(primary_com_name), 
-             labeller = labeller(primary_com_name = label_wrap_gen(width = 10))) +
-  guides(color = guide_legend(override.aes = list(size=5)))
-  
-  
-  
-  test <- feederwatch
-test2 <- test %>%
-    mutate(date = make_date(year, month, day))
-
 ```
 
 
@@ -509,9 +398,6 @@ test2 <- test %>%
 ## Column 
 
 ### Example analysis
-
-![Dark-eyed junco. Photo credit: Bob Vuxinic](dark_eyed_junco_ProjectFeederwatch.png){width="40%"}
-
 
 ```{r}
 # Quick data exploration, clean up, and creation of a few useful data frames 
