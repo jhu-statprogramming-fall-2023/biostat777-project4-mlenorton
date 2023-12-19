@@ -313,83 +313,52 @@ renderPlot({
 ```
 
 
-# State birds
+# Flock sizes
 
 ## Column {.sidebar}
 
-Select a state to see its "state bird" sightings 
+Select a species to see how many individuals were observed at a time
 
 ```{r}
-# remove Alaska and Hawaii from state list (i.e., want only continental states)
-continental_state.name <- state.name
-cont.state.name <- continental_state.name[-c(2,11)]
-selectInput("state", label = "State:",
-            choices = cont.state.name, selected = "Alabama")
+# Select the species you want to see
+# first remove birds that were only observed <10 times?
+birds_obs_often <- data_df %>%
+  group_by(primary_com_name) %>%
+  count() %>%
+  filter(n>10)
+
+selectInput("flock_sp", label = "Species:",
+            choices = sort(birds_obs_often$primary_com_name), selected = "Abert's Towhee")
+
 ```
 
-## Columm 
-### State bird sightings
+## Column 
+### Flock sizes
 ```{r}
 
 renderPlot({
-state_bird_sci_name <- state_bird_df %>%
-  filter(state == input$state) %>%
-  select(sci_name)
+flock_df <- data_df %>%
+  filter(primary_com_name == input$flock_sp) %>%
+  select(how_many)
 
-state_bird_com_name <- state_bird_df %>%
-  filter(state == input$state) %>%
-  select(primary_com_name)
-
-state_bird_data_df <- data_df %>%
-  filter(`state/province` == input$state,
-         sci_name %in% state_bird_sci_name)
-
-n_bird <- sum(state_bird_data_df$how_many)
-n_obs <- nrow(state_bird_data_df)
+num_sightings <- dim(flock_df)[1]
   
-if (dim(state_bird_data_df)[1] < 1){
-  states_map %>%
-    filter(region == tolower(input$state)) %>%
-    ggplot(aes(x = long, y = lat)) +
-    geom_polygon(fill="white",color="black") +
-    coord_map() +
-    theme_minimal() +
-    labs(x="Longitude (°E)", 
-       y="Latitude (°N)", 
-       title=paste0(input$state, ": ", state_bird_com_name, ": No sightings"))  +
-  theme(axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-                plot.title = element_text(size = 22),
-                plot.caption = element_text(size = 14)) 
-  }
-else {
-  states_map %>%
-    filter(region == tolower(input$state)) %>%
-    ggplot(aes(x = long, y = lat)) +
-    geom_polygon(fill="white",color="black") +
-    coord_map() +
-    theme_minimal() +
-    geom_point(data = state_bird_data_df,
-             aes(x = longitude, y = latitude), 
-             size = 5,
-             color = "black",
-             fill = "grey80",
-             pch = 21) +
-  theme_minimal() + 
-  theme(axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-                plot.title = element_text(size = 22),
-                plot.subtitle = element_text(size = 18),
-                plot.caption = element_text(size = 14),
-                legend.title =  element_text(size = 18)) + 
-  labs(x="Longitude (°E)", 
-       y="Latitude (°N)", 
-       title=paste0(input$state, ": ", state_bird_com_name), 
-       subtitle = paste0(n_bird, " birds sighted across ", n_obs, " observations"),
-       caption = "Data: Project FeederWatch") 
+if (length(unique(flock_df$how_many))==1) {
+  ggplot() +
+    labs(title = paste0("All ", num_sightings," sightings of the ", input$flock_sp, " had ", unique(flock_df$how_many), " bird(s)")) +
+    theme_minimal()
+} else {
+flock_df %>%
+  ggplot() +
+  geom_histogram(aes(how_many), 
+                 boundary=0, 
+                 closed="left") +
+  labs(x = "Number of birds observed together", 
+       y = "Frequency", 
+       title = paste0("Histogram of observations of ", input$flock_sp)) +
+  theme_minimal()
 }
 })
-
 ```
 
 
