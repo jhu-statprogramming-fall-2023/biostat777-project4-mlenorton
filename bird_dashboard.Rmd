@@ -119,7 +119,7 @@ library(lemon)     # pretty tables with kable
 
 ## Column 
 
-**Purpose of this dashboard**  
+### Purpose of this dashboard
 This dashboard investigates patterns in the abundance and distribution of different species of birds in the 2020-21 winter in the United States and southern Canada. The data came from [Project FeederWatch](https://feederwatch.org/), which is a citizen science project that aims to engage individuals in North America to count birds (for as long or as little as they like) to track winter trends in bird distribution and abundance. This project has been running for more than 30 years at this point!
 
 In this dashboard, we explore:
@@ -132,25 +132,9 @@ In this dashboard, we explore:
 This dashboard is intended for use by the general public, as well as the citizen scientists of Project FeederWatch. 
 
 
-### Chart A
+### 
 
-```{r}
 
-```
-
-## Column {data-width=350}
-
-### Chart B
-
-```{r}
-
-```
-
-### Chart C
-
-```{r}
-
-```
 
 # Data 
 
@@ -174,7 +158,7 @@ DT::renderDataTable({
 
 # Quick facts {data-orientation=rows}
 
-## Row
+## Row {data-height=250}
 
 ### Quick facts
 - 370,672: The total number of birds reported!
@@ -194,7 +178,7 @@ DT::renderDataTable({
 ![The northern cardinal was the most commonly observed species in Project FeederWatch in winter 2020-21. It is also the state bird for seven states! Photo credit: American Bird Conservancy.](northern_cardinal.jpeg){width="80%"}
 
 ### Dark-eyed junco
-![The dark-eyed junco was the second most commonly observed species. <br> Photo credit: Bob Vuxinic](dark_eyed_junco_ProjectFeederwatch.png){width="80%"}
+![The dark-eyed junco was the second most commonly observed species. Photo credit: Bob Vuxinic](dark_eyed_junco_ProjectFeederwatch.png){width="80%"}
 
 ### Downy woodpecker
 ![The downy woodpecker was the third most commonly observed species. Photo credit: Evan Lipton](downy_woodpecker.jpeg){width="80%"}
