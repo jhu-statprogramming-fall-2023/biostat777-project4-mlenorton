@@ -1,0 +1,13 @@
+name: bird_dashboard
+title: bird_dashboard
+username: mlenorton
+account: mlenorton
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10828029
+bundleId: 8067370
+url: https://mlenorton.shinyapps.io/bird_dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/state_birds_list_plain.csv
