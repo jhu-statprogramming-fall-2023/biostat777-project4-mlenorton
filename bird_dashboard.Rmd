@@ -126,7 +126,6 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=FALSE)
 library(flexdashboard)
 library(DT)
 library(shiny)
-library(lemon)     # pretty tables with kable
 ```
 # About
 
@@ -145,8 +144,7 @@ In this dashboard, we explore:
 This dashboard is intended for use by the general public, as well as the citizen scientists of Project FeederWatch. 
 
 
-### 
-
+<iframe width="900" height="500" src="https://www.youtube.com/embed/zL85DPfT_q0?si=48QXUDqd4vMM33Fn" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 
 # Data 
